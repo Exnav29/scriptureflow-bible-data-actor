@@ -1,0 +1,8 @@
+node_modules
+dist
+storage
+storage-*
+*.log
+npm-debug.log*
+.git
+.github

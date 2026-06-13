@@ -1,53 +1,59 @@
 {
   "title": "ScriptureFlow Bible Data Input",
-  "description": "Fetch catalog records, passage verses, or reference validation results from the public ScriptureFlow API.",
+  "description": "Run a lightweight ScriptureFlow lookup. The default input fetches John 3:16 from en-kjv and writes one verse row to the default dataset. Use catalog mode to discover available translations, or validate_reference mode to check whether a simple Bible reference resolves.",
   "type": "object",
   "schemaVersion": 1,
   "additionalProperties": false,
   "properties": {
     "mode": {
       "title": "Mode",
-      "description": "Choose the ScriptureFlow operation to run.",
+      "description": "Choose the ScriptureFlow operation. Phase 1 supports only catalog, passage, and validate_reference.",
       "type": "string",
       "editor": "select",
       "enum": ["catalog", "passage", "validate_reference"],
       "enumTitles": ["Catalog", "Passage", "Validate reference"],
-      "default": "passage"
+      "default": "passage",
+      "example": "passage"
     },
     "translationId": {
       "title": "Translation ID",
-      "description": "Exact ScriptureFlow translation key, such as en-kjv. Casing matters.",
+      "description": "Exact ScriptureFlow translation key, such as en-kjv. Used by passage and validate_reference modes. Leave the default to try the Actor quickly.",
       "type": "string",
       "editor": "textfield",
       "default": "en-kjv",
-      "prefill": "en-kjv"
+      "prefill": "en-kjv",
+      "example": "en-kjv"
     },
     "reference": {
       "title": "Reference",
-      "description": "Simple Bible reference, such as John 3:16, John 3:16-18, Psalm 23, or 1 John 1:9.",
+      "description": "Simple Bible reference for passage or validate_reference mode. Supported examples include John 3:16, John 3:16-18, Romans 8:28-30, Psalm 23, and 1 John 1:9. Complex multi-reference input is not supported.",
       "type": "string",
       "editor": "textfield",
       "default": "John 3:16",
-      "prefill": "John 3:16"
+      "prefill": "John 3:16",
+      "example": "John 3:16"
     },
     "languageCode": {
       "title": "Language code",
-      "description": "Optional language code filter for catalog mode.",
+      "description": "Optional language code filter for catalog mode, for example eng. Leave empty to return all catalog rows up to maxResults.",
       "type": "string",
-      "editor": "textfield"
+      "editor": "textfield",
+      "example": "eng"
     },
     "includeMetadata": {
       "title": "Include metadata",
-      "description": "Include available non-text ScriptureFlow metadata in output rows.",
+      "description": "Include available non-text ScriptureFlow metadata in verse rows, such as source path, API path, ID, and input reference.",
       "type": "boolean",
-      "default": true
+      "default": true,
+      "example": true
     },
     "maxResults": {
       "title": "Max results",
-      "description": "Maximum number of catalog rows to write.",
+      "description": "Maximum number of catalog rows to write in catalog mode. This does not limit passage mode, which writes one row per resolved verse.",
       "type": "integer",
       "editor": "number",
       "default": 100,
+      "example": 100,
       "minimum": 1,
       "maximum": 1000
     }

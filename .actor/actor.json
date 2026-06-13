@@ -1,8 +1,18 @@
 {
   "actorSpecification": 1,
   "name": "scriptureflow-bible-data",
-  "title": "ScriptureFlow Bible Data",
+  "title": "ScriptureFlow Bible Data — Structured Scripture for Automations and AI Agents",
   "version": "0.1",
   "buildTag": "latest",
-  "input": "./input_schema.json"
+  "dockerContextDir": "..",
+  "dockerfile": "../Dockerfile",
+  "readme": "../README.md",
+  "input": "./input_schema.json",
+  "output": "./output_schema.json",
+  "changelog": "../CHANGELOG.md",
+  "storages": {
+    "dataset": "./dataset_schema.json"
+  },
+  "minMemoryMbytes": 128,
+  "maxMemoryMbytes": 1024
 }

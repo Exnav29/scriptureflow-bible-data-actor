@@ -1,0 +1,218 @@
+{
+  "actorSpecification": 1,
+  "fields": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "recordType": {
+        "type": "string",
+        "title": "Record type",
+        "description": "The kind of row written by the Actor.",
+        "enum": ["translation", "verse", "validation", "error"],
+        "example": "verse"
+      },
+      "mode": {
+        "type": "string",
+        "title": "Mode",
+        "description": "The Actor mode that produced this row.",
+        "enum": ["catalog", "passage", "validate_reference"],
+        "example": "passage"
+      },
+      "source": {
+        "type": "object",
+        "title": "Source",
+        "description": "ScriptureFlow source metadata for the row, including endpoint, documentation URL, CTA URL, and retrieval time.",
+        "example": {
+          "provider": "ScriptureFlow",
+          "endpoint": "/api/verse",
+          "docsUrl": "https://scriptureflow-dev-docs.pages.dev",
+          "apiCtaUrl": "https://scriptureflow-dev-docs.pages.dev?utm_source=apify&utm_medium=actor&utm_campaign=scriptureflow_bible_data",
+          "retrievedAt": "2026-06-13T00:00:00.000Z"
+        }
+      },
+      "translationId": {
+        "type": ["string", "null"],
+        "title": "Translation ID",
+        "description": "ScriptureFlow translation key, such as en-kjv.",
+        "example": "en-kjv"
+      },
+      "reference": {
+        "type": ["string", "null"],
+        "title": "Reference",
+        "description": "Resolved Scripture reference for verse rows.",
+        "example": "John 3:16"
+      },
+      "inputReference": {
+        "type": ["string", "null"],
+        "title": "Input reference",
+        "description": "Reference string originally supplied by the user.",
+        "example": "Romans 8:28"
+      },
+      "normalizedReference": {
+        "type": ["string", "null"],
+        "title": "Normalized reference",
+        "description": "Reference resolved by ScriptureFlow validation mode.",
+        "example": "Romans 8:28"
+      },
+      "book": {
+        "type": ["string", "null"],
+        "title": "Book",
+        "description": "Resolved Bible book identifier returned by ScriptureFlow.",
+        "example": "john"
+      },
+      "bookSlug": {
+        "type": ["string", "null"],
+        "title": "Book slug",
+        "description": "Book slug returned by ScriptureFlow when available.",
+        "example": "john"
+      },
+      "canonicalBook": {
+        "type": ["string", "null"],
+        "title": "Canonical book",
+        "description": "Canonical book key returned by ScriptureFlow when available.",
+        "example": "john"
+      },
+      "chapter": {
+        "type": ["number", "null"],
+        "title": "Chapter",
+        "description": "Resolved chapter number.",
+        "example": 3
+      },
+      "verse": {
+        "type": ["number", "null"],
+        "title": "Verse",
+        "description": "Resolved verse number.",
+        "example": 16
+      },
+      "text": {
+        "type": ["string", "null"],
+        "title": "Scripture text",
+        "description": "Verse text returned by ScriptureFlow for passage mode.",
+        "example": "For God so loved the world..."
+      },
+      "valid": {
+        "type": ["boolean", "null"],
+        "title": "Valid",
+        "description": "Whether the row represents a valid resolved reference or user-error result.",
+        "example": true
+      },
+      "errorCode": {
+        "type": ["string", "null"],
+        "title": "Error code",
+        "description": "Structured error code for user/input error rows.",
+        "example": "UNSUPPORTED_REFERENCE_FORMAT"
+      },
+      "message": {
+        "type": ["string", "null"],
+        "title": "Message",
+        "description": "Human-readable error message for error rows.",
+        "example": "Unsupported reference format."
+      },
+      "status": {
+        "type": ["string", "number", "null"],
+        "title": "Status",
+        "description": "Translation status for catalog rows, or HTTP status for error rows.",
+        "example": 404
+      },
+      "metadata": {
+        "type": ["object", "null"],
+        "title": "Metadata",
+        "description": "Optional non-text metadata such as source path, API path, ID, and input reference.",
+        "example": {
+          "id": "en-kjv:john:3:16",
+          "sourcePath": "bibles/en-kjv/books/john/chapters/3/verses/16.json",
+          "apiPath": "/en-kjv/books/john/chapters/3/verses/16.json",
+          "inputReference": "John 3:16"
+        }
+      },
+      "languageCode": {
+        "type": ["string", "null"],
+        "title": "Language code",
+        "description": "Language code returned in catalog rows.",
+        "example": "eng"
+      },
+      "translationName": {
+        "type": ["string", "null"],
+        "title": "Translation name",
+        "description": "Human-readable translation name returned in catalog rows.",
+        "example": "King James Version"
+      },
+      "booksFound": {
+        "type": ["number", "null"],
+        "title": "Books found",
+        "description": "Number of books found in catalog metadata.",
+        "example": 66
+      },
+      "chaptersFound": {
+        "type": ["number", "null"],
+        "title": "Chapters found",
+        "description": "Number of chapters found in catalog metadata.",
+        "example": 1189
+      },
+      "versesFound": {
+        "type": ["number", "null"],
+        "title": "Verses found",
+        "description": "Number of verses found in catalog metadata.",
+        "example": 31102
+      },
+      "versesIndexType": {
+        "type": ["string", "null"],
+        "title": "Verse index type",
+        "description": "Catalog metadata describing the available ScriptureFlow index format.",
+        "example": "book-asset"
+      },
+      "details": {
+        "type": ["object", "null"],
+        "title": "Error details",
+        "description": "Raw details returned with a structured user/input error when available.",
+        "example": {
+          "error_code": "VERSION_INDEX_NOT_FOUND"
+        }
+      }
+    },
+    "required": ["recordType", "mode", "source"]
+  },
+  "views": {
+    "overview": {
+      "title": "Overview",
+      "description": "Practical fields for translation, verse, validation, and error rows.",
+      "transformation": {
+        "fields": [
+          "recordType",
+          "mode",
+          "translationId",
+          "reference",
+          "inputReference",
+          "normalizedReference",
+          "book",
+          "chapter",
+          "verse",
+          "text",
+          "valid",
+          "errorCode",
+          "message",
+          "status"
+        ]
+      },
+      "display": {
+        "component": "table",
+        "properties": {
+          "recordType": { "label": "Record type", "format": "text" },
+          "mode": { "label": "Mode", "format": "text" },
+          "translationId": { "label": "Translation", "format": "text" },
+          "reference": { "label": "Reference", "format": "text" },
+          "inputReference": { "label": "Input reference", "format": "text" },
+          "normalizedReference": { "label": "Normalized reference", "format": "text" },
+          "book": { "label": "Book", "format": "text" },
+          "chapter": { "label": "Chapter", "format": "number" },
+          "verse": { "label": "Verse", "format": "number" },
+          "text": { "label": "Text", "format": "text" },
+          "valid": { "label": "Valid", "format": "boolean" },
+          "errorCode": { "label": "Error code", "format": "text" },
+          "message": { "label": "Message", "format": "text" },
+          "status": { "label": "Status", "format": "text" }
+        }
+      }
+    }
+  }
+}
