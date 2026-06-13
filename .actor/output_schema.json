@@ -6,7 +6,7 @@
     "results": {
       "type": "string",
       "title": "Dataset results",
-      "description": "Translation, verse, validation, or structured error rows written to the default dataset.",
+      "description": "Translation, book metadata, verse, validation, or structured error rows written to the default dataset.",
       "template": "{{links.apiDefaultDatasetUrl}}/items"
     },
     "summary": {

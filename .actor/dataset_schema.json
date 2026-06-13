@@ -7,14 +7,14 @@
         "type": "string",
         "title": "Record type",
         "description": "The kind of row written by the Actor.",
-        "enum": ["translation", "verse", "validation", "error"],
+        "enum": ["translation", "verse", "validation", "error", "book"],
         "example": "verse"
       },
       "mode": {
         "type": "string",
         "title": "Mode",
         "description": "The Actor mode that produced this row.",
-        "enum": ["catalog", "passage", "validate_reference"],
+        "enum": ["catalog", "passage", "validate_reference", "translation_books"],
         "example": "passage"
       },
       "source": {
@@ -145,8 +145,26 @@
       "chaptersFound": {
         "type": ["number", "null"],
         "title": "Chapters found",
-        "description": "Number of chapters found in catalog metadata.",
+        "description": "Number of chapters found in catalog metadata or for a book metadata row.",
         "example": 1189
+      },
+      "firstChapter": {
+        "type": ["number", "null"],
+        "title": "First chapter",
+        "description": "Lowest chapter number found for a book metadata row.",
+        "example": 1
+      },
+      "lastChapter": {
+        "type": ["number", "null"],
+        "title": "Last chapter",
+        "description": "Highest chapter number found for a book metadata row.",
+        "example": 21
+      },
+      "totalVerses": {
+        "type": ["number", "null"],
+        "title": "Total verses",
+        "description": "Sum of chapter verse counts for a book metadata row when available.",
+        "example": 879
       },
       "versesFound": {
         "type": ["number", "null"],
@@ -174,7 +192,7 @@
   "views": {
     "overview": {
       "title": "Overview",
-      "description": "Practical fields for translation, verse, validation, and error rows.",
+      "description": "Practical fields for translation, book metadata, verse, validation, and error rows.",
       "transformation": {
         "fields": [
           "recordType",
@@ -184,6 +202,12 @@
           "inputReference",
           "normalizedReference",
           "book",
+          "bookSlug",
+          "canonicalBook",
+          "chaptersFound",
+          "firstChapter",
+          "lastChapter",
+          "totalVerses",
           "chapter",
           "verse",
           "text",
@@ -203,6 +227,12 @@
           "inputReference": { "label": "Input reference", "format": "text" },
           "normalizedReference": { "label": "Normalized reference", "format": "text" },
           "book": { "label": "Book", "format": "text" },
+          "bookSlug": { "label": "Book slug", "format": "text" },
+          "canonicalBook": { "label": "Canonical book", "format": "text" },
+          "chaptersFound": { "label": "Chapters", "format": "number" },
+          "firstChapter": { "label": "First chapter", "format": "number" },
+          "lastChapter": { "label": "Last chapter", "format": "number" },
+          "totalVerses": { "label": "Total verses", "format": "number" },
           "chapter": { "label": "Chapter", "format": "number" },
           "verse": { "label": "Verse", "format": "number" },
           "text": { "label": "Text", "format": "text" },

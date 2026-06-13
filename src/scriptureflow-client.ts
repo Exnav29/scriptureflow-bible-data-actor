@@ -80,6 +80,21 @@ export class ScriptureFlowClient {
         try {
           payload = body ? JSON.parse(body) : null;
         } catch (error) {
+          if (response.status === 400 || response.status === 404) {
+            throw new UserInputError(
+              response.status === 404 ? "REFERENCE_NOT_FOUND" : "INVALID_REFERENCE",
+              `ScriptureFlow returned HTTP ${response.status} for ${endpoint}.`,
+              {
+                status: response.status,
+                details: {
+                  endpoint,
+                  preview: body.slice(0, 160),
+                  error: error instanceof Error ? error.message : String(error),
+                },
+              }
+            );
+          }
+
           throw new InfrastructureError("MALFORMED_JSON", `ScriptureFlow returned malformed JSON for ${endpoint}.`, {
             status: response.status,
             details: { endpoint, preview: body.slice(0, 160), error: error instanceof Error ? error.message : String(error) },

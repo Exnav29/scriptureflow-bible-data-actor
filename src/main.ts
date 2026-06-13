@@ -1,6 +1,14 @@
 import { Actor, log } from "apify";
 import { InfrastructureError, UserInputError, isUserInputError } from "./errors.js";
-import { normalizeErrorRow, normalizeTranslationRows, normalizeValidationRow, normalizeVerseRows, extractTranslations, type Mode } from "./normalizers.js";
+import {
+  normalizeBookRows,
+  normalizeErrorRow,
+  normalizeTranslationRows,
+  normalizeValidationRow,
+  normalizeVerseRows,
+  extractTranslations,
+  type Mode,
+} from "./normalizers.js";
 import {
   PASSAGE_ENDPOINT,
   PUBLIC_CATALOG_ENDPOINT,
@@ -74,7 +82,7 @@ async function main(): Promise<void> {
     if (isUserInputError(error)) {
       const row = normalizeErrorRow({
         mode: input.mode,
-        endpoint: input.mode === "catalog" ? PUBLIC_CATALOG_ENDPOINT : PASSAGE_ENDPOINT,
+        endpoint: endpointForMode(input),
         retrievedAt: new Date().toISOString(),
         code: error.code,
         message: error.message,
@@ -106,7 +114,7 @@ async function main(): Promise<void> {
 
 function buildFallbackInput(input: ActorInput): Required<ActorInput> & { mode: Mode } {
   const rawMode = String(input.mode ?? DEFAULT_INPUT.mode).trim();
-  const mode: Mode = ["catalog", "passage", "validate_reference"].includes(rawMode)
+  const mode: Mode = ["catalog", "passage", "validate_reference", "translation_books"].includes(rawMode)
     ? (rawMode as Mode)
     : DEFAULT_INPUT.mode;
 
@@ -123,7 +131,7 @@ function buildFallbackInput(input: ActorInput): Required<ActorInput> & { mode: M
 function applyInputToSummary(summary: RunSummary, input: Required<ActorInput> & { mode: Mode }): void {
   summary.mode = input.mode;
   summary.translationId = input.mode === "catalog" ? undefined : input.translationId;
-  summary.inputReference = input.mode === "catalog" ? undefined : input.reference;
+  summary.inputReference = input.mode === "catalog" || input.mode === "translation_books" ? undefined : input.reference;
 }
 
 async function runMode(client: ScriptureFlowClient, input: Required<ActorInput> & { mode: Mode }): Promise<Record<string, unknown>[]> {
@@ -134,8 +142,10 @@ async function runMode(client: ScriptureFlowClient, input: Required<ActorInput> 
       return runPassage(client, input);
     case "validate_reference":
       return runValidateReference(client, input);
+    case "translation_books":
+      return runTranslationBooks(client, input);
     default:
-      throw new UserInputError("INVALID_MODE", "Unsupported mode. Phase 1 supports only catalog, passage, and validate_reference.");
+      throw new UserInputError("INVALID_MODE", "Unsupported mode. Supported modes are catalog, passage, validate_reference, and translation_books.");
   }
 }
 
@@ -198,6 +208,13 @@ async function runPassage(client: ScriptureFlowClient, input: Required<ActorInpu
   }
 }
 
+async function hasCatalogTranslation(client: ScriptureFlowClient, translationId: string): Promise<boolean> {
+  const result = await client.fetchCatalog();
+  return extractTranslations(result.payload).some((translation) => {
+    return String(translation.version ?? translation.id ?? "").trim() === translationId;
+  });
+}
+
 async function runValidateReference(client: ScriptureFlowClient, input: Required<ActorInput> & { mode: Mode }): Promise<Record<string, unknown>[]> {
   assertPassageInput(input);
   const parsed = parseReference(input.reference);
@@ -230,6 +247,74 @@ async function runValidateReference(client: ScriptureFlowClient, input: Required
         }),
         recordType: "validation",
       },
+    ];
+  }
+}
+
+async function runTranslationBooks(client: ScriptureFlowClient, input: Required<ActorInput> & { mode: Mode }): Promise<Record<string, unknown>[]> {
+  assertTranslationInput(input);
+  const endpoint = chaptersEndpoint(input.translationId);
+
+  try {
+    await client.checkStatus();
+    const result = await client.fetchChapters(input.translationId);
+
+    if (!Array.isArray(result.payload)) {
+      throw new InfrastructureError("UNEXPECTED_CHAPTERS_SHAPE", "ScriptureFlow chapters endpoint returned an unexpected shape.", {
+        details: result.payload,
+      });
+    }
+
+    const rows = normalizeBookRows(result.payload.filter(isRecord), {
+      mode: "translation_books",
+      translationId: input.translationId,
+      endpoint,
+      retrievedAt: new Date().toISOString(),
+      maxResults: input.maxResults,
+    });
+
+    if (rows.length === 0) {
+      throw new UserInputError("EMPTY_RESULT", "ScriptureFlow returned no book metadata for this translation.", {
+        status: 404,
+        details: { translationId: input.translationId },
+      });
+    }
+
+    return rows;
+  } catch (error) {
+    if (!isUserInputError(error)) {
+      if (error instanceof InfrastructureError && error.code === "MALFORMED_JSON") {
+        const translationExists = await hasCatalogTranslation(client, input.translationId);
+        if (!translationExists) {
+          return [
+            normalizeErrorRow({
+              mode: "translation_books",
+              endpoint,
+              retrievedAt: new Date().toISOString(),
+              code: "REFERENCE_NOT_FOUND",
+              message: "ScriptureFlow could not resolve the requested translation.",
+              translationId: input.translationId,
+              status: 404,
+              details: { translationId: input.translationId },
+            }),
+          ];
+        }
+      }
+
+      throw error;
+    }
+
+    return [
+      normalizeErrorRow({
+        mode: "translation_books",
+        endpoint,
+        retrievedAt: new Date().toISOString(),
+        code: error.code,
+        message: error.message,
+        translationId: input.translationId,
+        status: error.status,
+        details: error.details,
+      }),
     ];
   }
 }
@@ -316,8 +401,8 @@ function bookVariants(value: unknown): string[] {
 function normalizeInput(input: ActorInput): Required<ActorInput> & { mode: Mode } {
   const mode = String(input.mode ?? DEFAULT_INPUT.mode).trim() as Mode;
 
-  if (!["catalog", "passage", "validate_reference"].includes(mode)) {
-    throw new UserInputError("INVALID_MODE", "Unsupported mode. Phase 1 supports only catalog, passage, and validate_reference.");
+  if (!["catalog", "passage", "validate_reference", "translation_books"].includes(mode)) {
+    throw new UserInputError("INVALID_MODE", "Unsupported mode. Supported modes are catalog, passage, validate_reference, and translation_books.");
   }
 
   return {
@@ -337,12 +422,16 @@ function normalizeMaxResults(value: unknown): number {
 }
 
 function assertPassageInput(input: Required<ActorInput>): void {
-  if (!input.translationId) {
-    throw new UserInputError("INVALID_TRANSLATION", "translationId is required for this mode.");
-  }
+  assertTranslationInput(input);
 
   if (!input.reference) {
     throw new UserInputError("INVALID_REFERENCE", "reference is required for this mode.");
+  }
+}
+
+function assertTranslationInput(input: Required<ActorInput>): void {
+  if (!input.translationId) {
+    throw new UserInputError("INVALID_TRANSLATION", "translationId is required for this mode.");
   }
 }
 
@@ -351,7 +440,7 @@ function buildInitialSummary(input: Required<ActorInput> & { mode: Mode }, start
     status: "success",
     mode: input.mode,
     translationId: input.mode === "catalog" ? undefined : input.translationId,
-    inputReference: input.mode === "catalog" ? undefined : input.reference,
+    inputReference: input.mode === "catalog" || input.mode === "translation_books" ? undefined : input.reference,
     rowsWritten: 0,
     warnings: [],
     errors: [],
@@ -363,6 +452,20 @@ function buildInitialSummary(input: Required<ActorInput> & { mode: Mode }, start
       contactUrl: null,
     },
   };
+}
+
+function chaptersEndpoint(translationId: string): string {
+  return `/${encodeURIComponent(translationId)}/chapters.json`;
+}
+
+function endpointForMode(input: Required<ActorInput> & { mode: Mode }): string {
+  if (input.mode === "catalog") return PUBLIC_CATALOG_ENDPOINT;
+  if (input.mode === "translation_books") return chaptersEndpoint(input.translationId);
+  return PASSAGE_ENDPOINT;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
 async function writeSummary(summary: RunSummary): Promise<void> {

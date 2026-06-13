@@ -4,8 +4,8 @@ import {
   SCRIPTUREFLOW_DEVELOPER_DOCS_URL,
 } from "./scriptureflow-client.js";
 
-export type Mode = "catalog" | "passage" | "validate_reference";
-export type RecordType = "translation" | "verse" | "validation" | "error";
+export type Mode = "catalog" | "passage" | "validate_reference" | "translation_books";
+export type RecordType = "translation" | "verse" | "validation" | "error" | "book";
 
 export interface SourceObject {
   provider: "ScriptureFlow";
@@ -62,6 +62,74 @@ export function normalizeTranslationRows(
       versesFound: numberOrNull(translation.verses_found),
       versesIndexType: stringOrNull(translation.verses_index_type),
     }));
+}
+
+export function normalizeBookRows(
+  chapters: Record<string, unknown>[],
+  options: { mode: "translation_books"; translationId: string; endpoint: string; retrievedAt: string; maxResults: number }
+): Record<string, unknown>[] {
+  const source = buildSource(options.endpoint, options.retrievedAt);
+  const groups = new Map<
+    string,
+    {
+      book: string | null;
+      bookSlug: string | null;
+      canonicalBook: string | null;
+      chapters: Set<number>;
+      totalVerses: number;
+      hasVerseCounts: boolean;
+    }
+  >();
+
+  for (const chapter of chapters) {
+    const book = stringOrNull(chapter.book);
+    const bookSlug = stringOrNull(chapter.book_slug);
+    const canonicalBook = stringOrNull(chapter.canonical_book);
+    const key = bookSlug ?? canonicalBook ?? book;
+    if (!key) continue;
+
+    const group = groups.get(key) ?? {
+      book: book ?? canonicalBook ?? bookSlug,
+      bookSlug,
+      canonicalBook,
+      chapters: new Set<number>(),
+      totalVerses: 0,
+      hasVerseCounts: false,
+    };
+
+    group.book ??= book ?? canonicalBook ?? bookSlug;
+    group.bookSlug ??= bookSlug;
+    group.canonicalBook ??= canonicalBook;
+
+    const chapterNumber = numberOrNull(chapter.chapter);
+    if (chapterNumber != null) group.chapters.add(chapterNumber);
+
+    const verseCount = numberOrNull(chapter.verse_count);
+    if (verseCount != null) {
+      group.totalVerses += verseCount;
+      group.hasVerseCounts = true;
+    }
+
+    groups.set(key, group);
+  }
+
+  return [...groups.values()].slice(0, options.maxResults).map((group) => {
+    const chapterNumbers = [...group.chapters].sort((a, b) => a - b);
+
+    return {
+      recordType: "book",
+      mode: options.mode,
+      translationId: options.translationId,
+      book: group.book,
+      bookSlug: group.bookSlug,
+      canonicalBook: group.canonicalBook,
+      chaptersFound: chapterNumbers.length,
+      firstChapter: chapterNumbers[0] ?? null,
+      lastChapter: chapterNumbers.at(-1) ?? null,
+      totalVerses: group.hasVerseCounts ? group.totalVerses : null,
+      source,
+    };
+  });
 }
 
 export function normalizeVerseRows(
