@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0 - Structured passage input
+
+- Added structured passage input for `passage` mode.
+- Supports `book`, `chapter`, `verse`, and optional `endVerse`.
+- Improves multilingual workflows where localized book names work better as structured API fields.
+- Existing free-text `reference` behavior remains unchanged.
+- Fixes the Apify/n8n schema limitation where `book` was previously rejected as an unsupported input property.
+
 ## 0.2.0 - Translation book metadata
 
 - Added `translation_books` mode for metadata-only book discovery in a selected translation.

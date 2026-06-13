@@ -1,6 +1,6 @@
 {
   "title": "ScriptureFlow Bible Data Input",
-  "description": "Run a lightweight ScriptureFlow lookup. The default input fetches John 3:16 from en-kjv and writes one verse row to the default dataset. Use catalog mode to discover available translations, translation_books mode to list book metadata for a selected translation, or validate_reference mode to check whether a simple Bible reference resolves.",
+  "description": "Run a lightweight ScriptureFlow lookup. The default input fetches John 3:16 from en-kjv and writes one verse row to the default dataset. Use catalog mode to discover available translations, translation_books mode to list book metadata for a selected translation, passage mode with either reference or structured book/chapter/verse input, or validate_reference mode to check whether a simple Bible reference resolves.",
   "type": "object",
   "schemaVersion": 1,
   "additionalProperties": false,
@@ -26,12 +26,43 @@
     },
     "reference": {
       "title": "Reference",
-      "description": "Simple Bible reference for passage or validate_reference mode. Supported examples include John 3:16, John 3:16-18, Romans 8:28-30, Psalm 23, and 1 John 1:9. Complex multi-reference input is not supported.",
+      "description": "Simple Bible reference for passage or validate_reference mode, best for English/canonical free-text references. For localized book names returned by translation_books, use structured book, chapter, verse, and optional endVerse fields instead. Supported examples include John 3:16, John 3:16-18, Romans 8:28-30, Psalm 23, and 1 John 1:9. Complex multi-reference input is not supported.",
       "type": "string",
       "editor": "textfield",
       "default": "John 3:16",
       "prefill": "John 3:16",
       "example": "John 3:16"
+    },
+    "book": {
+      "title": "Book",
+      "description": "Structured passage book value, especially useful for localized book names or bookSlug values returned by translation_books. Example: yohana with translationId swh-onen.",
+      "type": "string",
+      "editor": "textfield",
+      "example": "yohana"
+    },
+    "chapter": {
+      "title": "Chapter",
+      "description": "Structured passage chapter number. Required when any structured passage field is used.",
+      "type": "integer",
+      "editor": "number",
+      "example": 3,
+      "minimum": 1
+    },
+    "verse": {
+      "title": "Verse",
+      "description": "Structured passage starting verse number. Required when any structured passage field is used.",
+      "type": "integer",
+      "editor": "number",
+      "example": 2,
+      "minimum": 1
+    },
+    "endVerse": {
+      "title": "End verse",
+      "description": "Optional same-chapter ending verse for structured passage ranges. Must be greater than or equal to verse.",
+      "type": "integer",
+      "editor": "number",
+      "example": 30,
+      "minimum": 1
     },
     "languageCode": {
       "title": "Language code",

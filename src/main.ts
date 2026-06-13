@@ -30,9 +30,26 @@ interface ActorInput {
   mode?: string;
   translationId?: string;
   reference?: string;
+  book?: string;
+  chapter?: number;
+  verse?: number;
+  endVerse?: number;
   languageCode?: string;
   includeMetadata?: boolean;
   maxResults?: number;
+}
+
+interface NormalizedActorInput {
+  mode: Mode;
+  translationId: string;
+  reference: string;
+  book: string;
+  chapter: number | null;
+  verse: number | null;
+  endVerse: number | null;
+  languageCode: string;
+  includeMetadata: boolean;
+  maxResults: number;
 }
 
 interface RunSummary {
@@ -112,7 +129,7 @@ async function main(): Promise<void> {
   }
 }
 
-function buildFallbackInput(input: ActorInput): Required<ActorInput> & { mode: Mode } {
+function buildFallbackInput(input: ActorInput): NormalizedActorInput {
   const rawMode = String(input.mode ?? DEFAULT_INPUT.mode).trim();
   const mode: Mode = ["catalog", "passage", "validate_reference", "translation_books"].includes(rawMode)
     ? (rawMode as Mode)
@@ -122,19 +139,23 @@ function buildFallbackInput(input: ActorInput): Required<ActorInput> & { mode: M
     mode,
     translationId: String(input.translationId ?? DEFAULT_INPUT.translationId).trim(),
     reference: String(input.reference ?? DEFAULT_INPUT.reference).trim(),
+    book: String(input.book ?? "").trim(),
+    chapter: normalizeOptionalInteger(input.chapter),
+    verse: normalizeOptionalInteger(input.verse),
+    endVerse: normalizeOptionalInteger(input.endVerse),
     languageCode: String(input.languageCode ?? "").trim(),
     includeMetadata: typeof input.includeMetadata === "boolean" ? input.includeMetadata : DEFAULT_INPUT.includeMetadata,
     maxResults: normalizeMaxResults(input.maxResults),
   };
 }
 
-function applyInputToSummary(summary: RunSummary, input: Required<ActorInput> & { mode: Mode }): void {
+function applyInputToSummary(summary: RunSummary, input: NormalizedActorInput): void {
   summary.mode = input.mode;
   summary.translationId = input.mode === "catalog" ? undefined : input.translationId;
-  summary.inputReference = input.mode === "catalog" || input.mode === "translation_books" ? undefined : input.reference;
+  summary.inputReference = input.mode === "catalog" || input.mode === "translation_books" || hasStructuredPassageInput(input) ? undefined : input.reference;
 }
 
-async function runMode(client: ScriptureFlowClient, input: Required<ActorInput> & { mode: Mode }): Promise<Record<string, unknown>[]> {
+async function runMode(client: ScriptureFlowClient, input: NormalizedActorInput): Promise<Record<string, unknown>[]> {
   switch (input.mode) {
     case "catalog":
       return runCatalog(client, input);
@@ -149,7 +170,7 @@ async function runMode(client: ScriptureFlowClient, input: Required<ActorInput> 
   }
 }
 
-async function runCatalog(client: ScriptureFlowClient, input: Required<ActorInput> & { mode: Mode }): Promise<Record<string, unknown>[]> {
+async function runCatalog(client: ScriptureFlowClient, input: NormalizedActorInput): Promise<Record<string, unknown>[]> {
   await client.checkStatus();
   const result = await client.fetchCatalog();
   const translations = extractTranslations(result.payload);
@@ -169,17 +190,28 @@ async function runCatalog(client: ScriptureFlowClient, input: Required<ActorInpu
   });
 }
 
-async function runPassage(client: ScriptureFlowClient, input: Required<ActorInput> & { mode: Mode }): Promise<Record<string, unknown>[]> {
+async function runPassage(client: ScriptureFlowClient, input: NormalizedActorInput): Promise<Record<string, unknown>[]> {
   assertPassageInput(input);
-  const parsed = parseReference(input.reference);
+  const structuredInput = buildStructuredPassageInput(input);
+  const parsed = structuredInput ? null : parseReference(input.reference);
 
   try {
     await client.checkStatus();
-    const result = await fetchParsedPassage(client, input.translationId, parsed);
+    const result = structuredInput
+      ? await client.fetchStructuredPassage(structuredInput)
+      : await fetchParsedPassage(client, input.translationId, parsed!);
     const rows = normalizeVerseRows(result.payload, {
       mode: "passage",
       translationId: input.translationId,
-      inputReference: input.reference,
+      inputReference: structuredInput ? null : input.reference,
+      structuredInput: structuredInput
+        ? {
+            book: input.book,
+            chapter: input.chapter,
+            verse: input.verse,
+            endVerse: input.endVerse,
+          }
+        : null,
       includeMetadata: input.includeMetadata,
       retrievedAt: new Date().toISOString(),
     });
@@ -215,7 +247,7 @@ async function hasCatalogTranslation(client: ScriptureFlowClient, translationId:
   });
 }
 
-async function runValidateReference(client: ScriptureFlowClient, input: Required<ActorInput> & { mode: Mode }): Promise<Record<string, unknown>[]> {
+async function runValidateReference(client: ScriptureFlowClient, input: NormalizedActorInput): Promise<Record<string, unknown>[]> {
   assertPassageInput(input);
   const parsed = parseReference(input.reference);
 
@@ -251,7 +283,7 @@ async function runValidateReference(client: ScriptureFlowClient, input: Required
   }
 }
 
-async function runTranslationBooks(client: ScriptureFlowClient, input: Required<ActorInput> & { mode: Mode }): Promise<Record<string, unknown>[]> {
+async function runTranslationBooks(client: ScriptureFlowClient, input: NormalizedActorInput): Promise<Record<string, unknown>[]> {
   assertTranslationInput(input);
   const endpoint = chaptersEndpoint(input.translationId);
 
@@ -398,7 +430,7 @@ function bookVariants(value: unknown): string[] {
   return [...variants];
 }
 
-function normalizeInput(input: ActorInput): Required<ActorInput> & { mode: Mode } {
+function normalizeInput(input: ActorInput): NormalizedActorInput {
   const mode = String(input.mode ?? DEFAULT_INPUT.mode).trim() as Mode;
 
   if (!["catalog", "passage", "validate_reference", "translation_books"].includes(mode)) {
@@ -409,6 +441,10 @@ function normalizeInput(input: ActorInput): Required<ActorInput> & { mode: Mode 
     mode,
     translationId: String(input.translationId ?? DEFAULT_INPUT.translationId).trim(),
     reference: String(input.reference ?? DEFAULT_INPUT.reference).trim(),
+    book: String(input.book ?? "").trim(),
+    chapter: normalizeOptionalInteger(input.chapter),
+    verse: normalizeOptionalInteger(input.verse),
+    endVerse: normalizeOptionalInteger(input.endVerse),
     languageCode: String(input.languageCode ?? "").trim(),
     includeMetadata: typeof input.includeMetadata === "boolean" ? input.includeMetadata : DEFAULT_INPUT.includeMetadata,
     maxResults: normalizeMaxResults(input.maxResults),
@@ -421,26 +457,71 @@ function normalizeMaxResults(value: unknown): number {
   return Math.min(numberValue, 1000);
 }
 
-function assertPassageInput(input: Required<ActorInput>): void {
+function normalizeOptionalInteger(value: unknown): number | null {
+  if (value == null || value === "") return null;
+  return Number(value);
+}
+
+function assertPassageInput(input: NormalizedActorInput): void {
   assertTranslationInput(input);
+
+  if (hasStructuredPassageInput(input)) {
+    assertStructuredPassageInput(input);
+    return;
+  }
 
   if (!input.reference) {
     throw new UserInputError("INVALID_REFERENCE", "reference is required for this mode.");
   }
 }
 
-function assertTranslationInput(input: Required<ActorInput>): void {
+function assertStructuredPassageInput(input: NormalizedActorInput): void {
+  if (!input.book) {
+    throw new UserInputError("INVALID_REFERENCE", "book is required for structured passage input.");
+  }
+
+  if (!Number.isInteger(input.chapter) || input.chapter == null || input.chapter < 1) {
+    throw new UserInputError("INVALID_REFERENCE", "chapter must be a positive integer for structured passage input.");
+  }
+
+  if (!Number.isInteger(input.verse) || input.verse == null || input.verse < 1) {
+    throw new UserInputError("INVALID_REFERENCE", "verse must be a positive integer for structured passage input.");
+  }
+
+  if (input.endVerse != null && (!Number.isInteger(input.endVerse) || input.endVerse < 1 || input.endVerse < input.verse)) {
+    throw new UserInputError("INVALID_REFERENCE", "endVerse must be a positive integer greater than or equal to verse.");
+  }
+}
+
+function assertTranslationInput(input: NormalizedActorInput): void {
   if (!input.translationId) {
     throw new UserInputError("INVALID_TRANSLATION", "translationId is required for this mode.");
   }
 }
 
-function buildInitialSummary(input: Required<ActorInput> & { mode: Mode }, startedAt: string): RunSummary {
+function buildStructuredPassageInput(input: NormalizedActorInput): Parameters<ScriptureFlowClient["fetchStructuredPassage"]>[0] | null {
+  if (!hasStructuredPassageInput(input)) return null;
+  assertStructuredPassageInput(input);
+
+  return {
+    translationId: input.translationId,
+    book: input.book,
+    chapter: input.chapter as number,
+    verse: input.verse as number,
+    endVerse: input.endVerse ?? undefined,
+  };
+}
+
+function hasStructuredPassageInput(input: NormalizedActorInput): boolean {
+  return Boolean(input.book) || input.chapter != null || input.verse != null || input.endVerse != null;
+}
+
+function buildInitialSummary(input: NormalizedActorInput, startedAt: string): RunSummary {
   return {
     status: "success",
     mode: input.mode,
     translationId: input.mode === "catalog" ? undefined : input.translationId,
-    inputReference: input.mode === "catalog" || input.mode === "translation_books" ? undefined : input.reference,
+    inputReference: input.mode === "catalog" || input.mode === "translation_books" || hasStructuredPassageInput(input) ? undefined : input.reference,
     rowsWritten: 0,
     warnings: [],
     errors: [],
@@ -458,7 +539,7 @@ function chaptersEndpoint(translationId: string): string {
   return `/${encodeURIComponent(translationId)}/chapters.json`;
 }
 
-function endpointForMode(input: Required<ActorInput> & { mode: Mode }): string {
+function endpointForMode(input: NormalizedActorInput): string {
   if (input.mode === "catalog") return PUBLIC_CATALOG_ENDPOINT;
   if (input.mode === "translation_books") return chaptersEndpoint(input.translationId);
   return PASSAGE_ENDPOINT;

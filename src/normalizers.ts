@@ -134,7 +134,14 @@ export function normalizeBookRows(
 
 export function normalizeVerseRows(
   payload: unknown,
-  options: { mode: "passage"; translationId: string; inputReference: string; includeMetadata: boolean; retrievedAt: string }
+  options: {
+    mode: "passage";
+    translationId: string;
+    inputReference: string | null;
+    structuredInput: { book: string; chapter: number | null; verse: number | null; endVerse: number | null } | null;
+    includeMetadata: boolean;
+    retrievedAt: string;
+  }
 ): Record<string, unknown>[] {
   const verses = extractVerseRecords(payload);
   const source = buildSource(PASSAGE_ENDPOINT, options.retrievedAt);
@@ -161,6 +168,10 @@ export function normalizeVerseRows(
         sourcePath: stringOrNull(verse.source_path),
         apiPath: stringOrNull(verse.api_path),
         inputReference: options.inputReference,
+        inputBook: options.structuredInput?.book ?? null,
+        inputChapter: options.structuredInput?.chapter ?? null,
+        inputVerse: options.structuredInput?.verse ?? null,
+        inputEndVerse: options.structuredInput?.endVerse ?? null,
       };
     }
 

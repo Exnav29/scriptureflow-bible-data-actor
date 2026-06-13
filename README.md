@@ -21,7 +21,7 @@ The Actor supports four focused modes:
 
 ## What can this Actor do?
 
-* **Look up verses and passages** - fetch simple references such as `John 3:16`, `John 3:16-18`, `Romans 8:28-30`, `Psalm 23`, or `1 John 1:9`.
+* **Look up verses and passages** - fetch simple references such as `John 3:16`, `John 3:16-18`, `Romans 8:28-30`, `Psalm 23`, or `1 John 1:9`, or use structured `book`, `chapter`, `verse`, and optional `endVerse` fields.
 * **Work with multilingual Scripture data** - choose translations by language, return Scripture text for the selected translation, and use localized book names where ScriptureFlow's alias system supports them.
 * **Discover translations** - list every available translation and its language, ideal for populating app dropdowns, supporting multilingual workflows, or letting an AI agent pick a valid `translationId`.
 * **List book names for a selected translation** - return one metadata row per book, useful before passage lookup and helpful for multilingual workflows such as Swahili `swh-onen`.
@@ -109,7 +109,7 @@ This is useful before passage lookup and helps discover valid localized book nam
 
 ### Passage example
 
-Use `passage` mode to fetch Scripture text:
+Use `passage` mode with a free-text `reference` to fetch Scripture text:
 
 ```json
 {
@@ -119,6 +119,44 @@ Use `passage` mode to fetch Scripture text:
   "includeMetadata": true
 }
 ```
+
+### Structured localized passage example
+
+Use structured passage input when localized book names or book slugs work better as API fields than as free-text references:
+
+```json
+{
+  "mode": "passage",
+  "translationId": "swh-onen",
+  "book": "yohana",
+  "chapter": 3,
+  "verse": 2,
+  "includeMetadata": true
+}
+```
+
+### Structured same-chapter range example
+
+Use `endVerse` for same-chapter structured passage ranges:
+
+```json
+{
+  "mode": "passage",
+  "translationId": "swh-onen",
+  "book": "warumi",
+  "chapter": 8,
+  "verse": 28,
+  "endVerse": 30,
+  "includeMetadata": true
+}
+```
+
+Recommended multilingual workflow:
+
+1. Run `catalog` with a language code, for example `swh`.
+2. Run `translation_books` for the returned translation ID, for example `swh-onen`.
+3. Use the returned `bookSlug` or book name in structured passage input.
+4. Retrieve Scripture text.
 
 ### Validate reference example
 
@@ -158,7 +196,8 @@ For agent workflows:
 * Use `catalog` to discover valid translation IDs and language codes.
 * Use `translation_books` to discover book names for a selected translation before lookup.
 * Use `validate_reference` before taking downstream action on a user-provided reference.
-* Use `passage` when the agent needs structured verse rows with Scripture text.
+* Use `passage` with structured `book`, `chapter`, `verse`, and optional `endVerse` fields when localized references are better represented as API fields than free text.
+* Use `passage` with `reference` when the agent needs simple English/canonical free-text lookup.
 
 ## Is ScriptureFlow Bible Data free?
 
@@ -186,12 +225,18 @@ Input fields:
 
 * **`mode`** - one of `catalog`, `translation_books`, `passage`, or `validate_reference`.
 * **`translationId`** - ScriptureFlow translation ID, such as `en-kjv` or `swh-onen`; required for `translation_books`, `passage`, and `validate_reference`.
-* **`reference`** - e.g. `John 3:16`; required for `passage` and `validate_reference`. Localized book names such as `Juan 3:16` may work when the selected translation and ScriptureFlow canonical book map support that alias.
+* **`reference`** - e.g. `John 3:16`; used for simple English/canonical free-text `passage` and required for `validate_reference`. Localized book names such as `Juan 3:16` may work when the selected translation and ScriptureFlow canonical book map support that alias.
+* **`book`** - structured passage book value, such as `yohana`; use the `bookSlug` or book name returned by `translation_books`.
+* **`chapter`** - structured passage chapter number; required when any structured passage field is used.
+* **`verse`** - structured passage starting verse number; required when any structured passage field is used.
+* **`endVerse`** - optional same-chapter ending verse for structured passage ranges.
 * **`languageCode`** - optional catalog filter for translation language.
 * **`includeMetadata`** - include available non-text metadata in verse rows.
 * **`maxResults`** - maximum number of catalog or translation book metadata rows to write.
 
 **Supported reference formats:** `John 3:16` - `John 3:16-18` - `Romans 8:28-30` - `Psalm 23` - `1 John 1:9`. ScriptureFlow also supports localized book aliases where they are available in the canonical book map, so some translations may resolve references such as `Juan 3:16` or other language-specific book names. Multi-reference input such as `John 3:16; Romans 8:28` is not supported in this version.
+
+For multilingual workflows, structured passage input is often more reliable than free-text localized references. If any structured fields are provided, the Actor uses structured lookup and requires `book`, `chapter`, and `verse`; `endVerse` is optional for same-chapter ranges.
 
 Apify may validate the public input schema before the Actor starts. Because `mode` is a dropdown enum in the Apify UI, invalid mode values can be rejected by the platform before runtime. The Actor still keeps its code-level `INVALID_MODE` handler as a defensive fallback for local runs and direct API calls.
 
