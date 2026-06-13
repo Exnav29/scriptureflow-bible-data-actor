@@ -1,0 +1,55 @@
+{
+  "title": "ScriptureFlow Bible Data Input",
+  "description": "Fetch catalog records, passage verses, or reference validation results from the public ScriptureFlow API.",
+  "type": "object",
+  "schemaVersion": 1,
+  "additionalProperties": false,
+  "properties": {
+    "mode": {
+      "title": "Mode",
+      "description": "Choose the ScriptureFlow operation to run.",
+      "type": "string",
+      "editor": "select",
+      "enum": ["catalog", "passage", "validate_reference"],
+      "enumTitles": ["Catalog", "Passage", "Validate reference"],
+      "default": "passage"
+    },
+    "translationId": {
+      "title": "Translation ID",
+      "description": "Exact ScriptureFlow translation key, such as en-kjv. Casing matters.",
+      "type": "string",
+      "editor": "textfield",
+      "default": "en-kjv",
+      "prefill": "en-kjv"
+    },
+    "reference": {
+      "title": "Reference",
+      "description": "Simple Bible reference, such as John 3:16, John 3:16-18, Psalm 23, or 1 John 1:9.",
+      "type": "string",
+      "editor": "textfield",
+      "default": "John 3:16",
+      "prefill": "John 3:16"
+    },
+    "languageCode": {
+      "title": "Language code",
+      "description": "Optional language code filter for catalog mode.",
+      "type": "string",
+      "editor": "textfield"
+    },
+    "includeMetadata": {
+      "title": "Include metadata",
+      "description": "Include available non-text ScriptureFlow metadata in output rows.",
+      "type": "boolean",
+      "default": true
+    },
+    "maxResults": {
+      "title": "Max results",
+      "description": "Maximum number of catalog rows to write.",
+      "type": "integer",
+      "editor": "number",
+      "default": 100,
+      "minimum": 1,
+      "maximum": 1000
+    }
+  }
+}

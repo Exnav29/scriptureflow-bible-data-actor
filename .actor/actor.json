@@ -1,0 +1,8 @@
+{
+  "actorSpecification": 1,
+  "name": "scriptureflow-bible-data",
+  "title": "ScriptureFlow Bible Data",
+  "version": "0.1",
+  "buildTag": "latest",
+  "input": "./input_schema.json"
+}
