@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1 - Runtime validation alignment
+
+- Relaxed structured passage input schema minimums so Actor runtime can return structured error rows for invalid chapter, verse, and endVerse values.
+
 ## 0.3.0 - Structured passage input
 
 - Added structured passage input for `passage` mode.

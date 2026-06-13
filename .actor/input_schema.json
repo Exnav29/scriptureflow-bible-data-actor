@@ -45,24 +45,21 @@
       "description": "Structured passage chapter number. Required when any structured passage field is used.",
       "type": "integer",
       "editor": "number",
-      "example": 3,
-      "minimum": 1
+      "example": 3
     },
     "verse": {
       "title": "Verse",
       "description": "Structured passage starting verse number. Required when any structured passage field is used.",
       "type": "integer",
       "editor": "number",
-      "example": 2,
-      "minimum": 1
+      "example": 2
     },
     "endVerse": {
       "title": "End verse",
       "description": "Optional same-chapter ending verse for structured passage ranges. Must be greater than or equal to verse.",
       "type": "integer",
       "editor": "number",
-      "example": 30,
-      "minimum": 1
+      "example": 30
     },
     "languageCode": {
       "title": "Language code",
