@@ -12,8 +12,8 @@
       "editor": "select",
       "enum": ["catalog", "catalogSummary", "passage", "validate_reference", "translation_books"],
       "enumTitles": ["Catalog", "Catalog summary", "Passage", "Validate reference", "Translation books"],
-      "default": "passage",
-      "example": "passage"
+      "default": "catalogSummary",
+      "example": "catalogSummary"
     },
     "translationId": {
       "title": "Translation ID",

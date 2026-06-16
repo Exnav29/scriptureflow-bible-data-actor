@@ -100,15 +100,11 @@ You can download the resulting dataset in various formats such as JSON, CSV, Exc
 
 ### Quick start
 
-Run the Actor with this quick-start passage input. It writes one verse row to the default dataset and `OUTPUT_SUMMARY.json` to the default key-value store:
+Run the Actor with the default `catalogSummary` mode. It writes one catalog summary row to the default dataset and `OUTPUT_SUMMARY.json` to the default key-value store:
 
 ```json
 {
-  "mode": "passage",
-  "translationId": "en-kjv",
-  "reference": "John 3:16",
-  "includeMetadata": true,
-  "maxResults": 100
+  "mode": "catalogSummary"
 }
 ```
 
@@ -358,6 +354,14 @@ This Actor is useful for agents that need structured Scripture lookup, reference
 User / input errors do **not** fail the Actor — they write structured rows and exit successfully. Infrastructure errors (ScriptureFlow API downtime, malformed JSON, request timeouts after retries, unexpected response shapes, unhealthy status, or Apify storage failure) fail clearly. The Actor does not fake Scripture data and does not use fallback Scripture text.
 
 ## Input reference
+
+Default input:
+
+```json
+{
+  "mode": "catalogSummary"
+}
+```
 
 Example passage input:
 
