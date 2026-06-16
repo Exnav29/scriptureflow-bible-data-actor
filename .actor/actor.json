@@ -4,12 +4,12 @@
   "title": "ScriptureFlow Bible Data — Structured Scripture for Automations and AI Agents",
   "version": "0.1",
   "buildTag": "latest",
-  "dockerContextDir": "..",
-  "dockerfile": "../Dockerfile",
-  "readme": "../README.md",
+  "dockerContextDir": ".",
+  "dockerfile": "./Dockerfile",
+  "readme": "./README.md",
   "input": "./input_schema.json",
   "output": "./output_schema.json",
-  "changelog": "../CHANGELOG.md",
+  "changelog": "./CHANGELOG.md",
   "storages": {
     "dataset": "./dataset_schema.json"
   },
