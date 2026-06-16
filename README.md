@@ -100,7 +100,7 @@ You can download the resulting dataset in various formats such as JSON, CSV, Exc
 
 ### Quick start
 
-Run the Actor with the default input. It writes one verse row to the default dataset and `OUTPUT_SUMMARY.json` to the default key-value store:
+Run the Actor with this quick-start passage input. It writes one verse row to the default dataset and `OUTPUT_SUMMARY.json` to the default key-value store:
 
 ```json
 {
@@ -359,7 +359,7 @@ User / input errors do **not** fail the Actor — they write structured rows and
 
 ## Input reference
 
-Default input:
+Example passage input:
 
 ```json
 {

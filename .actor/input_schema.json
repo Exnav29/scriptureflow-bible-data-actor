@@ -1,6 +1,6 @@
 {
   "title": "ScriptureFlow Bible Data Input",
-  "description": "Run a lightweight ScriptureFlow lookup. The default input fetches John 3:16 from en-kjv and writes one verse row to the default dataset. Use catalog mode to discover and filter available translations, catalogSummary mode to summarize catalog coverage, translation_books mode to list book metadata for a selected translation, passage mode with either reference or structured book/chapter/verse input, or validate_reference mode to check whether a simple Bible reference resolves.",
+  "description": "Run a lightweight ScriptureFlow lookup. Use catalog mode to discover and filter available translations, catalogSummary mode to summarize catalog coverage, translation_books mode to list book metadata for a selected translation, passage mode with either reference or structured book/chapter/verse input, or validate_reference mode to check whether a simple Bible reference resolves.",
   "type": "object",
   "schemaVersion": 1,
   "additionalProperties": false,
@@ -17,11 +17,9 @@
     },
     "translationId": {
       "title": "Translation ID",
-      "description": "Exact ScriptureFlow translation key, such as en-kjv or swh-onen. Required by passage, validate_reference, and translation_books modes. Leave the default to try the Actor quickly.",
+      "description": "Exact ScriptureFlow translation key, such as en-kjv or swh-onen. Required by passage, validate_reference, and translation_books modes.",
       "type": "string",
       "editor": "textfield",
-      "default": "en-kjv",
-      "prefill": "en-kjv",
       "example": "en-kjv"
     },
     "reference": {
@@ -29,8 +27,6 @@
       "description": "Simple Bible reference for passage or validate_reference mode, best for English/canonical free-text references. For localized book names returned by translation_books, use structured book, chapter, verse, and optional endVerse fields instead. Supported examples include John 3:16, John 3:16-18, Romans 8:28-30, Psalm 23, and 1 John 1:9. Complex multi-reference input is not supported.",
       "type": "string",
       "editor": "textfield",
-      "default": "John 3:16",
-      "prefill": "John 3:16",
       "example": "John 3:16"
     },
     "book": {
@@ -79,14 +75,12 @@
       "title": "Full Bible only",
       "description": "Optional catalog filter. When true, returns only translations with catalog metadata indicating at least 66 books and 1,189 chapters.",
       "type": "boolean",
-      "default": false,
       "example": true
     },
     "includeMetadata": {
       "title": "Include metadata",
       "description": "Include available non-text ScriptureFlow metadata in verse rows, such as source path, API path, ID, and input reference.",
       "type": "boolean",
-      "default": true,
       "example": true
     },
     "maxResults": {
