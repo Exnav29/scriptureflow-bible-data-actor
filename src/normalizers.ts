@@ -76,12 +76,12 @@ export function normalizeTranslationRows(
       source,
       translationId: stringOrNull(translation.version ?? translation.id),
       languageCode: stringOrNull(translation.language_code ?? translation.languageCode),
-      translationName: stringOrNull(translation.translation_name ?? translation.name ?? translation.version),
+      translationName: normalizeCatalogTranslationName(translation.translation_name ?? translation.translationName ?? translation.name ?? translation.version),
       status: stringOrNull(translation.status),
-      booksFound: numberOrNull(translation.books_found),
-      chaptersFound: numberOrNull(translation.chapters_found),
-      versesFound: numberOrNull(translation.verses_found),
-      versesIndexType: stringOrNull(translation.verses_index_type),
+      booksFound: numberOrNull(translation.books_found ?? translation.booksFound),
+      chaptersFound: numberOrNull(translation.chapters_found ?? translation.chaptersFound),
+      versesFound: numberOrNull(translation.verses_found ?? translation.versesFound),
+      versesIndexType: stringOrNull(translation.verses_index_type ?? translation.versesIndexType),
     }));
 }
 
@@ -337,6 +337,17 @@ function normalizeCatalogSearchText(value: unknown): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/gu, " ")
     .trim();
+}
+
+function normalizeCatalogTranslationName(value: unknown): string | null {
+  const name = stringOrNull(value);
+  if (!name) return null;
+
+  if (name === "Duay-Rheims American Edition  1899 [eng] USA") {
+    return "Douay-Rheims American Edition 1899";
+  }
+
+  return name.replace(/\s+/gu, " ").trim();
 }
 
 function catalogValueMatchesSearch(normalizedValue: string, searchFilter: string): boolean {
