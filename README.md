@@ -1,6 +1,6 @@
 # ScriptureFlow Bible Data
 
-**ScriptureFlow Bible Data is structured, multilingual Bible data infrastructure — not a Bible website scraper.** This Apify Actor returns clean Bible data as JSON across **200+ translations** in many languages: look up any **verse or passage**, discover available **Bible translations** in dozens of languages, resolve **localized book names** (e.g. `Juan 3:16` in Spanish or `Yohana` in Swahili), and **validate Scripture references** before you use them downstream. It calls the public ScriptureFlow API — **no scraping, no setup, no broken HTML selectors** — making it dependable for Apify datasets, **n8n** automations, and **AI agents**.
+**ScriptureFlow Bible Data is structured, multilingual Bible data infrastructure — not a Bible website scraper.** ScriptureFlow tracks **200+ discovered translation records**, with **199 ready translations** currently exposed through this Actor catalog. This Apify Actor returns clean Bible data as JSON: look up any **verse or passage**, discover available **Bible translations** in dozens of languages, resolve **localized book names** (e.g. `Juan 3:16` in Spanish or `Yohana` in Swahili), and **validate Scripture references** before you use them downstream. It calls the public ScriptureFlow API — **no scraping, no setup, no broken HTML selectors** — making it dependable for Apify datasets, **n8n** automations, and **AI agents**.
 
 ## What is ScriptureFlow Bible Data?
 
@@ -16,7 +16,7 @@ You also get the full **Apify platform** behind it: scheduling, monitoring, the 
 
 ## Multilingual, language-aware Bible data across many languages
 
-Multilingual support is a core strength of ScriptureFlow Bible Data, not an afterthought. The Actor ships with **200+ translations** ready across many languages, and because it is **translation-aware and language-aware**, the *same* workflow can serve completely different audiences just by changing the `translationId` — no separate pipeline per language.
+Multilingual support is a core strength of ScriptureFlow Bible Data, not an afterthought. ScriptureFlow tracks **200+ discovered translation records**, with **199 ready translations** currently available through the Actor catalog across many languages. Because the Actor is **translation-aware and language-aware**, the *same* workflow can serve completely different audiences just by changing the `translationId` — no separate pipeline per language.
 
 It also understands **localized book names**. Where ScriptureFlow has localized book aliases available, reference lookup resolves names in the reader's own language instead of forcing English:
 
@@ -54,7 +54,7 @@ ScriptureFlow Bible Data supports five focused modes:
 
 - 📖 **`passage`** — fetch a single verse or a same-chapter passage (e.g. `John 3:16`, `John 3:16-18`, `Romans 8:28-30`, `Psalm 23`, `1 John 1:9`), using free-text references or structured `book` / `chapter` / `verse` / `endVerse` fields.
 - 🌍 **`catalog`** — discover available Bible translations and their language codes; filter by `languageCode`, `search`, and `fullBibleOnly`.
-- 📊 **`catalogSummary`** — write one catalog coverage summary row with total translations, language count, full-Bible count, New Testament-only count, and top language codes when those values can be derived from catalog metadata.
+- 📊 **`catalogSummary`** — write one catalog coverage summary row with discovered and ready translation counts, language count, full-Bible count, New Testament-only count, and top language codes when those values can be derived from catalog metadata.
 - 📚 **`translation_books`** — list **metadata-only** book names for a selected translation (one row per book). Useful for discovering localized book names before a passage lookup.
 - ✅ **`validate_reference`** — check whether a reference resolves *before* sending it into an automation, database, or agent workflow.
 - 🧱 **Structured error rows** — invalid references, unsupported formats, and invalid translation IDs return dataset rows instead of crashing the run.
@@ -89,7 +89,8 @@ The Actor writes structured JSON rows to the default Apify dataset. Every row in
 | `message` | Human-readable message for validation or error rows. |
 | `status` | Translation status for catalog rows, or HTTP / user-error status when available. |
 | `metadata` | Optional supporting metadata from ScriptureFlow. |
-| `totalTranslations` / `languageCount` | Catalog-level totals for `catalogSummary` rows. |
+| `discoveredTranslations` / `readyTranslations` | Discovered records from ScriptureFlow status metadata and ready translations exposed through the Actor catalog for `catalogSummary` rows. |
+| `totalTranslations` / `languageCount` | Catalog-level totals for `catalogSummary` rows. `totalTranslations` is the ready catalog count the Actor read. |
 | `fullBibleCount` / `partialTranslationCount` / `newTestamentOnlyCount` | Coverage counts derived from available catalog metadata for `catalogSummary` rows. |
 | `topLanguages` | Most represented language codes for `catalogSummary` rows. |
 
@@ -136,6 +137,18 @@ Run the Actor with the default input. It writes one verse row to the default dat
 ```json
 {
   "mode": "catalogSummary"
+}
+```
+
+Example summary row:
+
+```json
+{
+  "recordType": "catalogSummary",
+  "mode": "catalogSummary",
+  "discoveredTranslations": 211,
+  "readyTranslations": 199,
+  "totalTranslations": 199
 }
 ```
 
@@ -369,7 +382,7 @@ Default input:
 | `endVerse` | Optional same-chapter ending verse for structured ranges. |
 | `languageCode` | Optional catalog filter for translation language. |
 | `search` | Optional catalog search across safe catalog fields such as translation ID, translation name, language code, and language name when available. |
-| `fullBibleOnly` | Optional catalog filter for translations whose metadata indicates at least 66 books and 1,189 chapters. |
+| `fullBibleOnly` | Optional catalog filter for translations whose available coverage counts indicate at least 66 books and 1,189 chapters. This is a coverage-count inference, not a denominational canon classification. |
 | `includeMetadata` | Include available non-text metadata in verse rows. |
 | `maxResults` | Maximum number of catalog or translation-book metadata rows to write. |
 
@@ -381,7 +394,7 @@ If any structured fields are provided, the Actor uses structured lookup and requ
 
 The most reliable way to see every supported translation is to run the Actor in **`catalog` mode**, which lists each available translation and its language code — perfect for app dropdowns, multilingual workflows, or agent translation selection.
 
-Use `search` to find catalog rows by translation ID, translation name, or language code. Use `fullBibleOnly` to limit catalog rows to translations whose current catalog metadata indicates full-Bible coverage.
+Use `search` to find catalog rows by translation ID, translation name, or language code. Use `fullBibleOnly` to limit catalog rows to translations whose current coverage counts indicate full-Bible coverage; it does not classify denominational canons.
 
 A preview translations list is also available here:
 

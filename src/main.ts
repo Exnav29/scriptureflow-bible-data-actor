@@ -212,7 +212,7 @@ async function runCatalog(client: ScriptureFlowClient, input: NormalizedActorInp
 }
 
 async function runCatalogSummary(client: ScriptureFlowClient): Promise<Record<string, unknown>[]> {
-  await client.checkStatus();
+  const status = await client.checkStatus();
   const result = await client.fetchCatalog();
   const translations = extractTranslations(result.payload);
 
@@ -227,6 +227,8 @@ async function runCatalogSummary(client: ScriptureFlowClient): Promise<Record<st
       mode: "catalogSummary",
       endpoint: result.endpoint,
       retrievedAt: new Date().toISOString(),
+      discoveredTranslations: numberOrNull(status.total_discovered),
+      readyTranslations: translations.length,
     }),
   ];
 }
@@ -596,6 +598,11 @@ function endpointForMode(input: NormalizedActorInput): string {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function numberOrNull(value: unknown): number | null {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue : null;
 }
 
 async function writeSummary(summary: RunSummary): Promise<void> {

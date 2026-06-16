@@ -181,7 +181,19 @@
       "totalTranslations": {
         "type": ["number", "null"],
         "title": "Total translations",
-        "description": "Total number of translations found in the catalog for a catalogSummary row.",
+        "description": "Total number of ready translations the Actor read from the catalog for a catalogSummary row.",
+        "example": 199
+      },
+      "discoveredTranslations": {
+        "type": ["number", "null"],
+        "title": "Discovered translations",
+        "description": "Total discovered translation records reported by ScriptureFlow status metadata when available.",
+        "example": 211
+      },
+      "readyTranslations": {
+        "type": ["number", "null"],
+        "title": "Ready translations",
+        "description": "Ready translations currently exposed through the Actor catalog.",
         "example": 199
       },
       "languageCount": {
@@ -234,6 +246,8 @@
           "recordType",
           "mode",
           "translationId",
+          "discoveredTranslations",
+          "readyTranslations",
           "totalTranslations",
           "languageCount",
           "fullBibleCount",
@@ -264,6 +278,8 @@
           "recordType": { "label": "Record type", "format": "text" },
           "mode": { "label": "Mode", "format": "text" },
           "translationId": { "label": "Translation", "format": "text" },
+          "discoveredTranslations": { "label": "Discovered translations", "format": "number" },
+          "readyTranslations": { "label": "Ready translations", "format": "number" },
           "totalTranslations": { "label": "Translations", "format": "number" },
           "languageCount": { "label": "Languages", "format": "number" },
           "fullBibleCount": { "label": "Full Bibles", "format": "number" },

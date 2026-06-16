@@ -87,7 +87,13 @@ export function normalizeTranslationRows(
 
 export function normalizeCatalogSummaryRow(
   translations: Record<string, unknown>[],
-  options: { mode: "catalogSummary"; endpoint: string; retrievedAt: string }
+  options: {
+    mode: "catalogSummary";
+    endpoint: string;
+    retrievedAt: string;
+    discoveredTranslations?: number | null;
+    readyTranslations?: number | null;
+  }
 ): Record<string, unknown> {
   const languageCounts = new Map<string, number>();
   let fullBibleCount = 0;
@@ -104,6 +110,8 @@ export function normalizeCatalogSummaryRow(
   return {
     recordType: "catalogSummary",
     mode: options.mode,
+    discoveredTranslations: options.discoveredTranslations ?? null,
+    readyTranslations: options.readyTranslations ?? translations.length,
     totalTranslations: translations.length,
     languageCount: languageCounts.size,
     fullBibleCount,

@@ -12,7 +12,7 @@
     "summary": {
       "type": "string",
       "title": "Run summary",
-      "description": "OUTPUT_SUMMARY.json in the default key-value store with status, row count, warnings, errors, and catalogSummary details when that mode is used.",
+      "description": "OUTPUT_SUMMARY.json in the default key-value store with status, row count, warnings, errors, and catalogSummary details, including discovered and ready catalog counts when that mode is used.",
       "template": "{{links.apiDefaultKeyValueStoreUrl}}/records/OUTPUT_SUMMARY"
     }
   }

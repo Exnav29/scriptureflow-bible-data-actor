@@ -148,7 +148,7 @@ export class ScriptureFlowClient {
     });
   }
 
-  async checkStatus(): Promise<void> {
+  async checkStatus(): Promise<Record<string, unknown>> {
     const { payload } = await this.fetchJson(STATUS_ENDPOINT);
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
       throw new InfrastructureError("UNEXPECTED_STATUS_SHAPE", "ScriptureFlow status endpoint returned an unexpected shape.");
@@ -160,6 +160,8 @@ export class ScriptureFlowClient {
         details: payload,
       });
     }
+
+    return status;
   }
 
   async fetchCatalog(): Promise<FetchResult> {
