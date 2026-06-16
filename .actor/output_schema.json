@@ -6,13 +6,13 @@
     "results": {
       "type": "string",
       "title": "Dataset results",
-      "description": "Translation, book metadata, verse, validation, or structured error rows written to the default dataset.",
+      "description": "Translation, catalog summary, book metadata, verse, validation, or structured error rows written to the default dataset.",
       "template": "{{links.apiDefaultDatasetUrl}}/items"
     },
     "summary": {
       "type": "string",
       "title": "Run summary",
-      "description": "OUTPUT_SUMMARY.json in the default key-value store with status, row count, warnings, and errors.",
+      "description": "OUTPUT_SUMMARY.json in the default key-value store with status, row count, warnings, errors, and catalogSummary details when that mode is used.",
       "template": "{{links.apiDefaultKeyValueStoreUrl}}/records/OUTPUT_SUMMARY"
     }
   }

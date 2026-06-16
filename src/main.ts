@@ -2,6 +2,7 @@ import { Actor, log } from "apify";
 import { InfrastructureError, UserInputError, isUserInputError } from "./errors.js";
 import {
   normalizeBookRows,
+  normalizeCatalogSummaryRow,
   normalizeErrorRow,
   normalizeTranslationRows,
   normalizeValidationRow,
@@ -35,6 +36,8 @@ interface ActorInput {
   verse?: number;
   endVerse?: number;
   languageCode?: string;
+  search?: string;
+  fullBibleOnly?: boolean;
   includeMetadata?: boolean;
   maxResults?: number;
 }
@@ -48,6 +51,8 @@ interface NormalizedActorInput {
   verse: number | null;
   endVerse: number | null;
   languageCode: string;
+  search: string;
+  fullBibleOnly: boolean;
   includeMetadata: boolean;
   maxResults: number;
 }
@@ -60,6 +65,7 @@ interface RunSummary {
   rowsWritten: number;
   warnings: string[];
   errors: string[];
+  catalogSummary?: Record<string, unknown>;
   startedAt: string;
   finishedAt: string | null;
   scriptureFlow: {
@@ -87,6 +93,9 @@ async function main(): Promise<void> {
     }
 
     summary.rowsWritten = rows.length;
+    if (input.mode === "catalogSummary") {
+      summary.catalogSummary = rows[0];
+    }
     summary.status = rows.some((row) => row.recordType === "error" || row.valid === false) ? "user_error" : "success";
     summary.errors = rows
       .filter((row) => row.recordType === "error" || row.valid === false)
@@ -131,7 +140,7 @@ async function main(): Promise<void> {
 
 function buildFallbackInput(input: ActorInput): NormalizedActorInput {
   const rawMode = String(input.mode ?? DEFAULT_INPUT.mode).trim();
-  const mode: Mode = ["catalog", "passage", "validate_reference", "translation_books"].includes(rawMode)
+  const mode: Mode = ["catalog", "catalogSummary", "passage", "validate_reference", "translation_books"].includes(rawMode)
     ? (rawMode as Mode)
     : DEFAULT_INPUT.mode;
 
@@ -144,6 +153,8 @@ function buildFallbackInput(input: ActorInput): NormalizedActorInput {
     verse: normalizeOptionalInteger(input.verse),
     endVerse: normalizeOptionalInteger(input.endVerse),
     languageCode: String(input.languageCode ?? "").trim(),
+    search: String(input.search ?? "").trim(),
+    fullBibleOnly: input.fullBibleOnly === true,
     includeMetadata: typeof input.includeMetadata === "boolean" ? input.includeMetadata : DEFAULT_INPUT.includeMetadata,
     maxResults: normalizeMaxResults(input.maxResults),
   };
@@ -151,14 +162,19 @@ function buildFallbackInput(input: ActorInput): NormalizedActorInput {
 
 function applyInputToSummary(summary: RunSummary, input: NormalizedActorInput): void {
   summary.mode = input.mode;
-  summary.translationId = input.mode === "catalog" ? undefined : input.translationId;
-  summary.inputReference = input.mode === "catalog" || input.mode === "translation_books" || hasStructuredPassageInput(input) ? undefined : input.reference;
+  summary.translationId = input.mode === "catalog" || input.mode === "catalogSummary" ? undefined : input.translationId;
+  summary.inputReference =
+    input.mode === "catalog" || input.mode === "catalogSummary" || input.mode === "translation_books" || hasStructuredPassageInput(input)
+      ? undefined
+      : input.reference;
 }
 
 async function runMode(client: ScriptureFlowClient, input: NormalizedActorInput): Promise<Record<string, unknown>[]> {
   switch (input.mode) {
     case "catalog":
       return runCatalog(client, input);
+    case "catalogSummary":
+      return runCatalogSummary(client);
     case "passage":
       return runPassage(client, input);
     case "validate_reference":
@@ -166,7 +182,10 @@ async function runMode(client: ScriptureFlowClient, input: NormalizedActorInput)
     case "translation_books":
       return runTranslationBooks(client, input);
     default:
-      throw new UserInputError("INVALID_MODE", "Unsupported mode. Supported modes are catalog, passage, validate_reference, and translation_books.");
+      throw new UserInputError(
+        "INVALID_MODE",
+        "Unsupported mode. Supported modes are catalog, catalogSummary, passage, validate_reference, and translation_books."
+      );
   }
 }
 
@@ -186,8 +205,30 @@ async function runCatalog(client: ScriptureFlowClient, input: NormalizedActorInp
     endpoint: result.endpoint,
     retrievedAt: new Date().toISOString(),
     languageCode: input.languageCode,
+    search: input.search,
+    fullBibleOnly: input.fullBibleOnly,
     maxResults: input.maxResults,
   });
+}
+
+async function runCatalogSummary(client: ScriptureFlowClient): Promise<Record<string, unknown>[]> {
+  await client.checkStatus();
+  const result = await client.fetchCatalog();
+  const translations = extractTranslations(result.payload);
+
+  if (translations.length === 0) {
+    throw new InfrastructureError("UNEXPECTED_CATALOG_SHAPE", "ScriptureFlow catalog endpoint returned no translations in an expected shape.", {
+      details: result.payload,
+    });
+  }
+
+  return [
+    normalizeCatalogSummaryRow(translations, {
+      mode: "catalogSummary",
+      endpoint: result.endpoint,
+      retrievedAt: new Date().toISOString(),
+    }),
+  ];
 }
 
 async function runPassage(client: ScriptureFlowClient, input: NormalizedActorInput): Promise<Record<string, unknown>[]> {
@@ -433,8 +474,11 @@ function bookVariants(value: unknown): string[] {
 function normalizeInput(input: ActorInput): NormalizedActorInput {
   const mode = String(input.mode ?? DEFAULT_INPUT.mode).trim() as Mode;
 
-  if (!["catalog", "passage", "validate_reference", "translation_books"].includes(mode)) {
-    throw new UserInputError("INVALID_MODE", "Unsupported mode. Supported modes are catalog, passage, validate_reference, and translation_books.");
+  if (!["catalog", "catalogSummary", "passage", "validate_reference", "translation_books"].includes(mode)) {
+    throw new UserInputError(
+      "INVALID_MODE",
+      "Unsupported mode. Supported modes are catalog, catalogSummary, passage, validate_reference, and translation_books."
+    );
   }
 
   return {
@@ -446,6 +490,8 @@ function normalizeInput(input: ActorInput): NormalizedActorInput {
     verse: normalizeOptionalInteger(input.verse),
     endVerse: normalizeOptionalInteger(input.endVerse),
     languageCode: String(input.languageCode ?? "").trim(),
+    search: String(input.search ?? "").trim(),
+    fullBibleOnly: input.fullBibleOnly === true,
     includeMetadata: typeof input.includeMetadata === "boolean" ? input.includeMetadata : DEFAULT_INPUT.includeMetadata,
     maxResults: normalizeMaxResults(input.maxResults),
   };
@@ -520,8 +566,11 @@ function buildInitialSummary(input: NormalizedActorInput, startedAt: string): Ru
   return {
     status: "success",
     mode: input.mode,
-    translationId: input.mode === "catalog" ? undefined : input.translationId,
-    inputReference: input.mode === "catalog" || input.mode === "translation_books" || hasStructuredPassageInput(input) ? undefined : input.reference,
+    translationId: input.mode === "catalog" || input.mode === "catalogSummary" ? undefined : input.translationId,
+    inputReference:
+      input.mode === "catalog" || input.mode === "catalogSummary" || input.mode === "translation_books" || hasStructuredPassageInput(input)
+        ? undefined
+        : input.reference,
     rowsWritten: 0,
     warnings: [],
     errors: [],
@@ -540,7 +589,7 @@ function chaptersEndpoint(translationId: string): string {
 }
 
 function endpointForMode(input: NormalizedActorInput): string {
-  if (input.mode === "catalog") return PUBLIC_CATALOG_ENDPOINT;
+  if (input.mode === "catalog" || input.mode === "catalogSummary") return PUBLIC_CATALOG_ENDPOINT;
   if (input.mode === "translation_books") return chaptersEndpoint(input.translationId);
   return PASSAGE_ENDPOINT;
 }

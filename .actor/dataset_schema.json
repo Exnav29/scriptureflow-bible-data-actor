@@ -7,14 +7,14 @@
         "type": "string",
         "title": "Record type",
         "description": "The kind of row written by the Actor.",
-        "enum": ["translation", "verse", "validation", "error", "book"],
+        "enum": ["translation", "catalogSummary", "verse", "validation", "error", "book"],
         "example": "verse"
       },
       "mode": {
         "type": "string",
         "title": "Mode",
         "description": "The Actor mode that produced this row.",
-        "enum": ["catalog", "passage", "validate_reference", "translation_books"],
+        "enum": ["catalog", "catalogSummary", "passage", "validate_reference", "translation_books"],
         "example": "passage"
       },
       "source": {
@@ -178,6 +178,42 @@
         "description": "Catalog metadata describing the available ScriptureFlow index format.",
         "example": "book-asset"
       },
+      "totalTranslations": {
+        "type": ["number", "null"],
+        "title": "Total translations",
+        "description": "Total number of translations found in the catalog for a catalogSummary row.",
+        "example": 199
+      },
+      "languageCount": {
+        "type": ["number", "null"],
+        "title": "Language count",
+        "description": "Number of unique catalog language codes for a catalogSummary row.",
+        "example": 112
+      },
+      "fullBibleCount": {
+        "type": ["number", "null"],
+        "title": "Full Bible count",
+        "description": "Number of translations whose catalog metadata indicates at least 66 books and 1,189 chapters.",
+        "example": 42
+      },
+      "partialTranslationCount": {
+        "type": ["number", "null"],
+        "title": "Partial translation count",
+        "description": "Number of catalog translations not classified as full Bible by the available coverage metadata.",
+        "example": 157
+      },
+      "newTestamentOnlyCount": {
+        "type": ["number", "null"],
+        "title": "New Testament only count",
+        "description": "Number of translations whose catalog metadata indicates exactly 27 books and 260 chapters.",
+        "example": 64
+      },
+      "topLanguages": {
+        "type": ["array", "null"],
+        "title": "Top languages",
+        "description": "Most represented catalog language codes, sorted by translation count.",
+        "example": [{ "languageCode": "eng", "translationCount": 21 }]
+      },
       "details": {
         "type": ["object", "null"],
         "title": "Error details",
@@ -198,6 +234,11 @@
           "recordType",
           "mode",
           "translationId",
+          "totalTranslations",
+          "languageCount",
+          "fullBibleCount",
+          "partialTranslationCount",
+          "newTestamentOnlyCount",
           "reference",
           "inputReference",
           "normalizedReference",
@@ -223,6 +264,11 @@
           "recordType": { "label": "Record type", "format": "text" },
           "mode": { "label": "Mode", "format": "text" },
           "translationId": { "label": "Translation", "format": "text" },
+          "totalTranslations": { "label": "Translations", "format": "number" },
+          "languageCount": { "label": "Languages", "format": "number" },
+          "fullBibleCount": { "label": "Full Bibles", "format": "number" },
+          "partialTranslationCount": { "label": "Partial translations", "format": "number" },
+          "newTestamentOnlyCount": { "label": "New Testament only", "format": "number" },
           "reference": { "label": "Reference", "format": "text" },
           "inputReference": { "label": "Input reference", "format": "text" },
           "normalizedReference": { "label": "Normalized reference", "format": "text" },

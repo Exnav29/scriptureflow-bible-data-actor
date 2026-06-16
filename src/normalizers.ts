@@ -4,8 +4,8 @@ import {
   SCRIPTUREFLOW_DEVELOPER_DOCS_URL,
 } from "./scriptureflow-client.js";
 
-export type Mode = "catalog" | "passage" | "validate_reference" | "translation_books";
-export type RecordType = "translation" | "verse" | "validation" | "error" | "book";
+export type Mode = "catalog" | "catalogSummary" | "passage" | "validate_reference" | "translation_books";
+export type RecordType = "translation" | "catalogSummary" | "verse" | "validation" | "error" | "book";
 
 export interface SourceObject {
   provider: "ScriptureFlow";
@@ -38,15 +38,36 @@ export function extractTranslations(payload: unknown): Record<string, unknown>[]
 
 export function normalizeTranslationRows(
   translations: Record<string, unknown>[],
-  options: { mode: "catalog"; endpoint: string; retrievedAt: string; languageCode?: string; maxResults: number }
+  options: {
+    mode: "catalog";
+    endpoint: string;
+    retrievedAt: string;
+    languageCode?: string;
+    search?: string;
+    fullBibleOnly?: boolean;
+    maxResults: number;
+  }
 ): Record<string, unknown>[] {
   const languageFilter = options.languageCode?.trim().toLowerCase();
+  const searchFilter = normalizeCatalogSearchText(options.search);
   const source = buildSource(options.endpoint, options.retrievedAt);
 
   return translations
     .filter((translation) => {
-      if (!languageFilter) return true;
-      return String(translation.language_code ?? translation.languageCode ?? "").toLowerCase() === languageFilter;
+      if (languageFilter && String(translation.language_code ?? translation.languageCode ?? "").toLowerCase() !== languageFilter) {
+        return false;
+      }
+
+      if (options.fullBibleOnly === true && !isFullBibleTranslation(translation)) {
+        return false;
+      }
+
+      if (!searchFilter) return true;
+
+      return searchableCatalogValues(translation).some((value) => {
+        const normalizedValue = normalizeCatalogSearchText(value);
+        return catalogValueMatchesSearch(normalizedValue, searchFilter);
+      });
     })
     .slice(0, options.maxResults)
     .map((translation) => ({
@@ -62,6 +83,42 @@ export function normalizeTranslationRows(
       versesFound: numberOrNull(translation.verses_found),
       versesIndexType: stringOrNull(translation.verses_index_type),
     }));
+}
+
+export function normalizeCatalogSummaryRow(
+  translations: Record<string, unknown>[],
+  options: { mode: "catalogSummary"; endpoint: string; retrievedAt: string }
+): Record<string, unknown> {
+  const languageCounts = new Map<string, number>();
+  let fullBibleCount = 0;
+  let newTestamentOnlyCount = 0;
+
+  for (const translation of translations) {
+    const languageCode = stringOrNull(translation.language_code ?? translation.languageCode) ?? "unknown";
+    languageCounts.set(languageCode, (languageCounts.get(languageCode) ?? 0) + 1);
+
+    if (isFullBibleTranslation(translation)) fullBibleCount += 1;
+    if (isNewTestamentOnlyTranslation(translation)) newTestamentOnlyCount += 1;
+  }
+
+  return {
+    recordType: "catalogSummary",
+    mode: options.mode,
+    totalTranslations: translations.length,
+    languageCount: languageCounts.size,
+    fullBibleCount,
+    partialTranslationCount: translations.length - fullBibleCount,
+    newTestamentOnlyCount,
+    topLanguages: [...languageCounts.entries()]
+      .sort((left, right) => {
+        const countDelta = right[1] - left[1];
+        if (countDelta !== 0) return countDelta;
+        return left[0].localeCompare(right[0]);
+      })
+      .slice(0, 10)
+      .map(([languageCode, translationCount]) => ({ languageCode, translationCount })),
+    source: buildSource(options.endpoint, options.retrievedAt),
+  };
 }
 
 export function normalizeBookRows(
@@ -247,4 +304,83 @@ function stringOrNull(value: unknown): string | null {
 function numberOrNull(value: unknown): number | null {
   const numberValue = Number(value);
   return Number.isFinite(numberValue) ? numberValue : null;
+}
+
+function searchableCatalogValues(translation: Record<string, unknown>): string[] {
+  return [
+    translation.version,
+    translation.id,
+    translation.translation_name,
+    translation.name,
+    translation.language_name,
+    translation.languageName,
+    translation.language_code,
+    translation.languageCode,
+  ].flatMap((value) => {
+    const stringValue = stringOrNull(value);
+    return stringValue == null ? [] : [stringValue];
+  });
+}
+
+function normalizeCatalogSearchText(value: unknown): string {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/gu, " ")
+    .trim();
+}
+
+function catalogValueMatchesSearch(normalizedValue: string, searchFilter: string): boolean {
+  if (normalizedValue.includes(searchFilter)) return true;
+
+  const searchTokens = searchFilter.split(/\s+/u).filter(Boolean);
+  const valueTokens = normalizedValue.split(/\s+/u).filter(Boolean);
+
+  if (searchTokens.length === 0 || valueTokens.length === 0) return false;
+
+  return searchTokens.every((searchToken) => {
+    if (searchToken.length < 5) return false;
+
+    return valueTokens.some((valueToken) => {
+      return valueToken.length >= 4 && levenshteinDistance(searchToken, valueToken) <= 1;
+    });
+  });
+}
+
+function levenshteinDistance(left: string, right: string): number {
+  const previous = Array.from({ length: right.length + 1 }, (_, index) => index);
+
+  for (let leftIndex = 0; leftIndex < left.length; leftIndex += 1) {
+    const current = [leftIndex + 1];
+
+    for (let rightIndex = 0; rightIndex < right.length; rightIndex += 1) {
+      const substitutionCost = left[leftIndex] === right[rightIndex] ? 0 : 1;
+      current[rightIndex + 1] = Math.min(
+        current[rightIndex] + 1,
+        previous[rightIndex + 1] + 1,
+        previous[rightIndex] + substitutionCost
+      );
+    }
+
+    for (let index = 0; index < current.length; index += 1) {
+      previous[index] = current[index];
+    }
+  }
+
+  return previous[right.length] ?? 0;
+}
+
+function isFullBibleTranslation(translation: Record<string, unknown>): boolean {
+  const booksFound = numberOrNull(translation.books_found ?? translation.booksFound);
+  const chaptersFound = numberOrNull(translation.chapters_found ?? translation.chaptersFound);
+
+  return booksFound != null && chaptersFound != null && booksFound >= 66 && chaptersFound >= 1189;
+}
+
+function isNewTestamentOnlyTranslation(translation: Record<string, unknown>): boolean {
+  const booksFound = numberOrNull(translation.books_found ?? translation.booksFound);
+  const chaptersFound = numberOrNull(translation.chapters_found ?? translation.chaptersFound);
+
+  return booksFound === 27 && chaptersFound === 260;
 }

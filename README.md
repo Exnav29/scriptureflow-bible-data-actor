@@ -50,10 +50,11 @@ To see the exact, current list of supported translations and languages, use **`c
 
 ## What can this Actor do?
 
-ScriptureFlow Bible Data supports four focused modes:
+ScriptureFlow Bible Data supports five focused modes:
 
 - 📖 **`passage`** — fetch a single verse or a same-chapter passage (e.g. `John 3:16`, `John 3:16-18`, `Romans 8:28-30`, `Psalm 23`, `1 John 1:9`), using free-text references or structured `book` / `chapter` / `verse` / `endVerse` fields.
-- 🌍 **`catalog`** — discover available Bible translations and their language codes; ideal for populating app dropdowns or letting an AI agent pick a valid `translationId`.
+- 🌍 **`catalog`** — discover available Bible translations and their language codes; filter by `languageCode`, `search`, and `fullBibleOnly`.
+- 📊 **`catalogSummary`** — write one catalog coverage summary row with total translations, language count, full-Bible count, New Testament-only count, and top language codes when those values can be derived from catalog metadata.
 - 📚 **`translation_books`** — list **metadata-only** book names for a selected translation (one row per book). Useful for discovering localized book names before a passage lookup.
 - ✅ **`validate_reference`** — check whether a reference resolves *before* sending it into an automation, database, or agent workflow.
 - 🧱 **Structured error rows** — invalid references, unsupported formats, and invalid translation IDs return dataset rows instead of crashing the run.
@@ -66,8 +67,8 @@ The Actor writes structured JSON rows to the default Apify dataset. Every row in
 
 | Field | Description |
 | --- | --- |
-| `recordType` | Row type: `translation`, `book`, `verse`, `validation`, or `error`. |
-| `mode` | Mode that produced the row: `catalog`, `translation_books`, `passage`, or `validate_reference`. |
+| `recordType` | Row type: `translation`, `catalogSummary`, `book`, `verse`, `validation`, or `error`. |
+| `mode` | Mode that produced the row: `catalog`, `catalogSummary`, `translation_books`, `passage`, or `validate_reference`. |
 | `source` | Object describing ScriptureFlow as provider, endpoint used, docs URL, CTA URL, and retrieval time. |
 | `translationId` | ScriptureFlow translation ID, such as `en-kjv` or `swh-onen`. |
 | `languageCode` | Language code for catalog rows when available. |
@@ -88,6 +89,9 @@ The Actor writes structured JSON rows to the default Apify dataset. Every row in
 | `message` | Human-readable message for validation or error rows. |
 | `status` | Translation status for catalog rows, or HTTP / user-error status when available. |
 | `metadata` | Optional supporting metadata from ScriptureFlow. |
+| `totalTranslations` / `languageCount` | Catalog-level totals for `catalogSummary` rows. |
+| `fullBibleCount` / `partialTranslationCount` / `newTestamentOnlyCount` | Coverage counts derived from available catalog metadata for `catalogSummary` rows. |
+| `topLanguages` | Most represented language codes for `catalogSummary` rows. |
 
 You can download the resulting dataset in various formats such as JSON, CSV, Excel, or HTML directly from the Apify platform.
 
@@ -114,6 +118,24 @@ Run the Actor with the default input. It writes one verse row to the default dat
   "mode": "catalog",
   "languageCode": "eng",
   "maxResults": 100
+}
+```
+
+### Search the translation catalog
+
+```json
+{
+  "mode": "catalog",
+  "search": "Douay",
+  "maxResults": 100
+}
+```
+
+### Summarize catalog coverage
+
+```json
+{
+  "mode": "catalogSummary"
 }
 ```
 
@@ -338,7 +360,7 @@ Default input:
 
 | Field | Description |
 | --- | --- |
-| `mode` | One of `catalog`, `translation_books`, `passage`, `validate_reference`. |
+| `mode` | One of `catalog`, `catalogSummary`, `translation_books`, `passage`, `validate_reference`. |
 | `translationId` | ScriptureFlow translation ID (e.g. `en-kjv`, `swh-onen`); required for `translation_books`, `passage`, and `validate_reference`. |
 | `reference` | e.g. `John 3:16`; used for free-text passage and required for `validate_reference`. Localized names like `Juan 3:16` may work when the translation and ScriptureFlow's canonical book map support that alias. |
 | `book` | Structured passage book value, e.g. `yohana`; use the `bookSlug` or book name returned by `translation_books`. |
@@ -346,6 +368,8 @@ Default input:
 | `verse` | Structured passage starting verse; required when any structured passage field is used. |
 | `endVerse` | Optional same-chapter ending verse for structured ranges. |
 | `languageCode` | Optional catalog filter for translation language. |
+| `search` | Optional catalog search across safe catalog fields such as translation ID, translation name, language code, and language name when available. |
+| `fullBibleOnly` | Optional catalog filter for translations whose metadata indicates at least 66 books and 1,189 chapters. |
 | `includeMetadata` | Include available non-text metadata in verse rows. |
 | `maxResults` | Maximum number of catalog or translation-book metadata rows to write. |
 
@@ -356,6 +380,8 @@ If any structured fields are provided, the Actor uses structured lookup and requ
 ## Discover the full Bible translation catalog
 
 The most reliable way to see every supported translation is to run the Actor in **`catalog` mode**, which lists each available translation and its language code — perfect for app dropdowns, multilingual workflows, or agent translation selection.
+
+Use `search` to find catalog rows by translation ID, translation name, or language code. Use `fullBibleOnly` to limit catalog rows to translations whose current catalog metadata indicates full-Bible coverage.
 
 A preview translations list is also available here:
 
@@ -431,7 +457,7 @@ No. The Actor does not translate Scripture text or convert references between la
 
 - `UNSUPPORTED_REFERENCE_FORMAT` — the reference is outside the supported simple-reference formats.
 - `REFERENCE_NOT_FOUND` — ScriptureFlow could not resolve the requested reference or translation.
-- `INVALID_MODE` — the requested mode is not supported. Use only `catalog`, `translation_books`, `passage`, or `validate_reference`.
+- `INVALID_MODE` — the requested mode is not supported. Use only `catalog`, `catalogSummary`, `translation_books`, `passage`, or `validate_reference`.
 - `REQUEST_FAILED_AFTER_RETRIES` — ScriptureFlow returned a retryable infrastructure error after bounded retries.
 
 ### Can I use this in n8n or AI agents?
