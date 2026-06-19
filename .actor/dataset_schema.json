@@ -314,6 +314,168 @@
           "status": { "label": "Status", "format": "text" }
         }
       }
+    },
+    "passage": {
+      "title": "Passage",
+      "description": "Scripture passage text for bulletins, sermon notes, devotional emails, and Bible study handouts.",
+      "transformation": {
+        "fields": ["reference", "translationName", "text", "translationId"]
+      },
+      "display": {
+        "component": "table",
+        "properties": {
+          "reference": { "label": "Reference", "format": "text" },
+          "translationName": { "label": "Translation", "format": "text" },
+          "text": { "label": "Scripture text", "format": "text" },
+          "translationId": { "label": "Translation ID", "format": "text" }
+        }
+      }
+    },
+    "passage_with_location": {
+      "title": "Passage with location",
+      "description": "Scripture passage text with structured verse location for sermon preparation and study workflows.",
+      "transformation": {
+        "fields": ["reference", "translationName", "book", "chapter", "verse", "text", "translationId"]
+      },
+      "display": {
+        "component": "table",
+        "properties": {
+          "reference": { "label": "Reference", "format": "text" },
+          "translationName": { "label": "Translation", "format": "text" },
+          "book": { "label": "Book", "format": "text" },
+          "chapter": { "label": "Chapter", "format": "number" },
+          "verse": { "label": "Verse", "format": "number" },
+          "text": { "label": "Scripture text", "format": "text" },
+          "translationId": { "label": "Translation ID", "format": "text" }
+        }
+      }
+    },
+    "catalog": {
+      "title": "Catalog",
+      "description": "Bible translations available for ministry apps, multilingual workflows, and Bible study tools.",
+      "transformation": {
+        "fields": ["translationId", "translationName", "languageCode", "status"]
+      },
+      "display": {
+        "component": "table",
+        "properties": {
+          "translationId": { "label": "Translation ID", "format": "text" },
+          "translationName": { "label": "Translation", "format": "text" },
+          "languageCode": { "label": "Language", "format": "text" },
+          "status": { "label": "Status", "format": "text" }
+        }
+      }
+    },
+    "catalog_with_coverage": {
+      "title": "Catalog with coverage",
+      "description": "Bible translation catalog with completeness information for app planning and corpus coverage review.",
+      "transformation": {
+        "fields": ["translationId", "translationName", "languageCode", "booksFound", "chaptersFound", "status"]
+      },
+      "display": {
+        "component": "table",
+        "properties": {
+          "translationId": { "label": "Translation ID", "format": "text" },
+          "translationName": { "label": "Translation", "format": "text" },
+          "languageCode": { "label": "Language", "format": "text" },
+          "booksFound": { "label": "Books found", "format": "number" },
+          "chaptersFound": { "label": "Chapters found", "format": "number" },
+          "status": { "label": "Status", "format": "text" }
+        }
+      }
+    },
+    "catalog_summary": {
+      "title": "Catalog summary",
+      "description": "High-level summary of the Scripture translations supported by ScriptureFlow.",
+      "transformation": {
+        "fields": ["discoveredTranslations", "readyTranslations", "totalTranslations"]
+      },
+      "display": {
+        "component": "table",
+        "properties": {
+          "discoveredTranslations": { "label": "Discovered translations", "format": "number" },
+          "readyTranslations": { "label": "Ready translations", "format": "number" },
+          "totalTranslations": { "label": "Total ready translations", "format": "number" }
+        }
+      }
+    },
+    "translation_books": {
+      "title": "Translation books",
+      "description": "Localized Bible book names for multilingual ministry apps, forms, and study workflows.",
+      "transformation": {
+        "fields": ["translationId", "translationName", "canonicalBook", "bookSlug", "book", "chaptersFound"]
+      },
+      "display": {
+        "component": "table",
+        "properties": {
+          "translationId": { "label": "Translation ID", "format": "text" },
+          "translationName": { "label": "Translation", "format": "text" },
+          "canonicalBook": { "label": "Book code", "format": "text" },
+          "bookSlug": { "label": "Book", "format": "text" },
+          "book": { "label": "Localized book name", "format": "text" },
+          "chaptersFound": { "label": "Chapters found", "format": "number" }
+        }
+      }
+    },
+    "validation": {
+      "title": "Validation",
+      "description": "Bible reference validation for forms, ministry workflows, church databases, and automation tools.",
+      "transformation": {
+        "fields": ["inputReference", "normalizedReference", "valid", "message", "translationId"]
+      },
+      "display": {
+        "component": "table",
+        "properties": {
+          "inputReference": { "label": "Input reference", "format": "text" },
+          "normalizedReference": { "label": "Normalized reference", "format": "text" },
+          "valid": { "label": "Valid", "format": "boolean" },
+          "message": { "label": "Message", "format": "text" },
+          "translationId": { "label": "Translation ID", "format": "text" }
+        }
+      }
+    },
+    "errors": {
+      "title": "Errors",
+      "description": "Structured error output for requests that cannot be resolved.",
+      "transformation": {
+        "fields": ["message", "errorCode", "translationId", "inputReference", "valid"]
+      },
+      "display": {
+        "component": "table",
+        "properties": {
+          "message": { "label": "Message", "format": "text" },
+          "errorCode": { "label": "Error code", "format": "text" },
+          "translationId": { "label": "Translation ID", "format": "text" },
+          "inputReference": { "label": "Input reference", "format": "text" },
+          "valid": { "label": "Valid", "format": "boolean" }
+        }
+      }
+    },
+    "developer_debug": {
+      "title": "Developer debug",
+      "description": "Broader internal view for developer review and troubleshooting.",
+      "transformation": {
+        "fields": ["recordType", "mode", "translationId", "translationName", "languageCode", "reference", "book", "chapter", "verse", "text", "valid", "status", "errorCode", "message"]
+      },
+      "display": {
+        "component": "table",
+        "properties": {
+          "recordType": { "label": "Record type", "format": "text" },
+          "mode": { "label": "Mode", "format": "text" },
+          "translationId": { "label": "Translation ID", "format": "text" },
+          "translationName": { "label": "Translation", "format": "text" },
+          "languageCode": { "label": "Language", "format": "text" },
+          "reference": { "label": "Reference", "format": "text" },
+          "book": { "label": "Book", "format": "text" },
+          "chapter": { "label": "Chapter", "format": "number" },
+          "verse": { "label": "Verse", "format": "number" },
+          "text": { "label": "Scripture text", "format": "text" },
+          "valid": { "label": "Valid", "format": "boolean" },
+          "status": { "label": "Status", "format": "text" },
+          "errorCode": { "label": "Error code", "format": "text" },
+          "message": { "label": "Message", "format": "text" }
+        }
+      }
     }
   }
 }
